@@ -263,7 +263,7 @@ class EE_Sofort extends EE_Offsite_Gateway {
 				$this->respond ("Duplicate callback...");
 				return false;
 			}else{
-				$this->respond ("Payment created...");
+				$this->respond ("Paid...");
 
 				$primary_registrant = $transaction->primary_registration();
 				$primary_registration_code = !empty($primary_registrant) ? $primary_registrant->reg_code() : '';
@@ -284,7 +284,8 @@ class EE_Sofort extends EE_Offsite_Gateway {
 				));
 
 				$payment->save();
-				$this->respond("Done");
+				$this->respond("(EventEspresso 4, 23-04-2015)");
+
 				return $this->update_transaction_with_payment($transaction,$payment);
 			}
 		}
