@@ -20,11 +20,11 @@
  * @class	TargetPay Core class
  */
 
-class TargetPayCore
+class TargetPayCoreEE4
 	{
     // Constants
 
-	const     MIN_AMOUNT			= 84;
+	const     MIN_AMOUNT			= 1;
 
     const     ERR_NO_AMOUNT			= "Geen bedrag meegegeven | No amount given";
     const	  ERR_NO_DESCRIPTION	= "Geen omschrijving meegegeven | No description given";
@@ -33,7 +33,7 @@ class TargetPayCore
     const	  ERR_NO_TXID			= "Er is een onjuist transactie ID opgegeven | An incorrect transaction ID was given";
     const	  ERR_NO_RETURN_URL		= "Geen of ongeldige return URL | No or invalid return URL";
     const	  ERR_NO_REPORT_URL		= "Geen of ongeldige report URL | No or invalid report URL";
-    const     ERR_IDEAL_NO_BANK		= "Geen bank geselecteerd voor iDEAL | No bank selected for iDEAL";
+    //const     ERR_IDEAL_NO_BANK		= "Geen bank geselecteerd voor iDEAL | No bank selected for iDEAL";
     const     ERR_SOFORT_NO_COUNTRY	= "Geen land geselecteerd voor Sofort | No country selected for Sofort";
     const     ERR_PAYBYINVOICE		= "Fout bij achteraf betalen|Error with paybyinvoice";
 
@@ -48,7 +48,7 @@ class TargetPayCore
 																				    c) 'DEB' + countrycode for Sofort Banking, e.g. DEB49 for Germany
                                                                                 */
 
-    protected $minimumAmounts		= array("AUTO" => 84, "IDE" => 84, "MRC" => 49, "DEB" => 10, "AFT" => 1, "WAL" => 10, "CC" => 100);
+    protected $minimumAmounts		= array("AUTO" => 84, "IDE" => 1, "MRC" => 49, "DEB" => 10, "AFT" => 1, "WAL" => 10, "CC" => 100);
 
     protected $checkAPIs			= array("IDE" => "https://www.targetpay.com/ideal/check",
     										"MRC" => "https://www.targetpay.com/mrcash/check",
@@ -84,6 +84,8 @@ class TargetPayCore
     protected $errorMessage			= null;
 
     protected $parameters 			= array(); 	// Additional parameters
+    
+    private $_version				= null;
 
     /**
 	 *	Constructor
@@ -142,6 +144,7 @@ class TargetPayCore
 
 	public function startPayment () 
 	{
+		
 		if (!$this->rtlo) {
 			$this->errorMessage = self::ERR_NO_RTLO;
 			return false;
@@ -172,11 +175,6 @@ class TargetPayCore
 			return false;
 		}
 
-		if (($this->payMethod=="IDE") && (!$this->bankId)) {
-        	$this->errorMessage = self::ERR_IDEAL_NO_BANK;
-            return false;
-        }
-
 		if (($this->payMethod=="DEB") && (!$this->countryId)) {
         	$this->errorMessage = self::ERR_SOFORT_NO_BANK;
             return false;
@@ -194,7 +192,7 @@ class TargetPayCore
         		"amount=".urlencode($this->amount)."&".
         		"description=".urlencode($this->description)."&".
                 "currency=".urlencode($this->currency)."&".
-                (($this->payMethod=="IDE") ? "ver=2&language=nl&" : "").
+                (($this->payMethod=="IDE") ? "ver=3&language=nl&" : "").
                 (($this->payMethod=="AFT") ? "ver=2&language=nl&" : "").
                 (($this->payMethod=="MRC") ? "lang=".urlencode($this->getLanguage(array("NL","FR","EN"),"NL"))."&" : "").
                 (($this->payMethod=="DEB") ? "type=1&country=".urlencode($this->countryId)."&lang=".urlencode($this->getLanguage(array("NL","EN","DE"),"DE"))."&" : "").
@@ -218,7 +216,11 @@ class TargetPayCore
             return false;
 		}
 	}
-
+	
+	public static function setVersion($version) {
+		
+	}
+	
     /**
 	 *	Check transaction with TargetPay
 	 *	@param	string	$payMethodId		Payment method's see above

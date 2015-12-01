@@ -135,10 +135,14 @@ class EE_Mrcash extends EE_Offsite_Gateway {
 
 
 		$primary_registrant = $transaction->primary_registration();
+		$primary_registrant->finalize();
 		
-		require_once (dirname(__DIR__) . "/targetpay.class.php");
-		$targetPay = new TargetPayCore ($this->tpPaymethodId, $targetpay_settings['rtlo'],  "fa7948cad2783f63e1d03b63620a5f64", "nl");
-		if ($this->tpPaymethodId == "IDE") { $targetPay->setVersion (3); }
+		if (!class_exists('TargetPayCoreEE4') || !class_exists('TargetPayCoreEE4',true)) {
+			require_once (dirname(__DIR__) . "/targetpay.class.php");
+		}
+		
+		$targetPay = new TargetPayCoreEE4 ($this->tpPaymethodId, $targetpay_settings['rtlo'],  "fa7948cad2783f63e1d03b63620a5f64", "nl");
+		
 
 		$amount = round ($transaction->remaining()*100);
 		$targetPay->setAmount ($amount);
@@ -146,6 +150,8 @@ class EE_Mrcash extends EE_Offsite_Gateway {
 		$targetPay->setReturnUrl ($this->_get_return_url($primary_registrant));
 		$targetPay->setCancelUrl ($this->_get_cancel_url());
 		$targetPay->setReportUrl ($this->_get_notify_url($primary_registrant));
+
+
 
 		$this->_gatewayUrl = $targetPay->startPayment();
 
@@ -180,6 +186,7 @@ class EE_Mrcash extends EE_Offsite_Gateway {
             $amount
 		));		   	
 
+		
 		$this->_EEM_Gateways->set_off_site_form($this->submitPayment());
 		$this->redirect_after_reg_step_3($transaction,$targetpay_settings['testmode']);
 	}
@@ -210,7 +217,7 @@ class EE_Mrcash extends EE_Offsite_Gateway {
 
 		$txid = $_POST["trxid"];
 
-		$this->respond ("Start IPN for ".($transaction instanceof EE_Transaction)?$transaction->ID():'unknown');
+		$this->respond ("Start IPN for ".(($transaction instanceof EE_Transaction)?$transaction->ID():'unknown'));
 		do_action('action_hook_espresso_log', __FILE__, __FUNCTION__, '');
 
 		$targetpay_settings = $this->_payment_settings;
@@ -218,6 +225,7 @@ class EE_Mrcash extends EE_Offsite_Gateway {
 		/* Get transaction data from database */
 
 		$sql = "SELECT * FROM `".$wpdb->base_prefix."ee4_targetpay` WHERE `order_id`=%s AND `targetpay_txid`=%s";
+		
 		$tpPayment = $wpdb->get_row( $wpdb->prepare( $sql, $transaction->ID(), $txid));
 
 		if (!$tpPayment) {
@@ -228,7 +236,7 @@ class EE_Mrcash extends EE_Offsite_Gateway {
         /* Verify payment */
                         
 		require_once (dirname(__DIR__) . "/targetpay.class.php");
-		$targetPay = new TargetPayCore ($this->tpPaymethodId, $targetpay_settings['rtlo'],  "fa7948cad2783f63e1d03b63620a5f64", "nl");
+		$targetPay = new TargetPayCoreEE4 ($this->tpPaymethodId, $targetpay_settings['rtlo'],  "fa7948cad2783f63e1d03b63620a5f64", "nl");
         $payResult = $targetPay->checkPayment ($txid) || ($targetpay_settings['testmode']);
 
         if (!$payResult) {
@@ -254,31 +262,32 @@ class EE_Mrcash extends EE_Offsite_Gateway {
 				return false;
 			}
 
-			/* Set approved */
-			$status = EEM_Payment::status_id_approved; 
-			$gateway_response = __('Your payment is approved.', 'event_espresso');			
+			
+				
 
 			$payment = $this->_PAY->get_payment_by_txn_id_chq_nmbr($txid);
+
 			if(!empty($payment)) {
 				$this->respond ("Duplicate callback...");
 				return false;
 			}else{
 				$this->respond ("Paid...");
-
+				$gateway_response = __('Your payment is approved.', 'event_espresso');
+				
 				$primary_registrant = $transaction->primary_registration();
 				$primary_registration_code = !empty($primary_registrant) ? $primary_registrant->reg_code() : '';
-
+				
 				$payment = EE_Payment::new_instance(array(
 					'TXN_ID' => $transaction->ID(),
-					'STS_ID' => $status,
+					'STS_ID' => EEM_Payment::status_id_approved,
 					'PAY_timestamp' => current_time( 'mysql', FALSE ),
-					'PAY_method' => sanitize_text_field($_POST['txn_type']),
-					'PAY_amount' => round($tpPayment->amount / 100),
+					'PAY_method' => sanitize_text_field('Targetpay Mr. Cash'),
+					'PAY_amount' => number_format(($tpPayment->amount / 100),2,".",""), //Decimal in de database
 					'PAY_gateway' => $this->_gateway_name,
 					'PAY_gateway_response' => $gateway_response,
 					'PAY_txn_id_chq_nmbr' => $txid,
 					'PAY_po_number' => NULL,
-					'PAY_extra_accntng'=>$primary_registration_code,
+					'PAY_extra_accntng' => $primary_registration_code,
 					'PAY_via_admin' => false,
 					'PAY_details' => $_POST
 				));
