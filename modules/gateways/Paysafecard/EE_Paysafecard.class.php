@@ -43,7 +43,7 @@ class EE_Paysafecard extends EE_Offsite_Gateway {
 	protected function _default_settings() 
 	{
 		$this->_payment_settings['rtlo'] = '93929';
-		$this->_payment_settings['image_url'] = '';
+		//$this->_payment_settings['image_url'] = ''; //This will create "Payment Settings Updated!"
 		$this->_payment_settings['testmode'] = false;
 		$this->_payment_settings['type'] = 'off-site';
 		$this->_payment_settings['display_name'] = __($this->tpPaymethodDisplayName,'event_espresso');
