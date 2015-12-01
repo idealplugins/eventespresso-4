@@ -24,7 +24,7 @@ class TargetPayCoreEE4
 	{
     // Constants
 
-	const     MIN_AMOUNT			= 1;
+	const     MIN_AMOUNT			= 84;
 
     const     ERR_NO_AMOUNT			= "Geen bedrag meegegeven | No amount given";
     const	  ERR_NO_DESCRIPTION	= "Geen omschrijving meegegeven | No description given";
@@ -33,13 +33,13 @@ class TargetPayCoreEE4
     const	  ERR_NO_TXID			= "Er is een onjuist transactie ID opgegeven | An incorrect transaction ID was given";
     const	  ERR_NO_RETURN_URL		= "Geen of ongeldige return URL | No or invalid return URL";
     const	  ERR_NO_REPORT_URL		= "Geen of ongeldige report URL | No or invalid report URL";
-    //const     ERR_IDEAL_NO_BANK		= "Geen bank geselecteerd voor iDEAL | No bank selected for iDEAL";
+    const     ERR_IDEAL_NO_BANK		= "Geen bank geselecteerd voor iDEAL | No bank selected for iDEAL";
     const     ERR_SOFORT_NO_COUNTRY	= "Geen land geselecteerd voor Sofort | No country selected for Sofort";
     const     ERR_PAYBYINVOICE		= "Fout bij achteraf betalen|Error with paybyinvoice";
 
     // Constant array's
 
-    protected $paymentOptions		= array("AUTO", "IDE", "MRC", "DEB", "AFT", "WAL", "CC");		
+    protected $paymentOptions		= array("AUTO", "IDE", "MRC", "DEB", "WAL", "CC");		
     																			/*  If payMethod is set to 'AUTO' it will decided on the value of bankId
     																			    Then, when requested the bankId list will be filled with
 
@@ -48,12 +48,11 @@ class TargetPayCoreEE4
 																				    c) 'DEB' + countrycode for Sofort Banking, e.g. DEB49 for Germany
                                                                                 */
 
-    protected $minimumAmounts		= array("AUTO" => 84, "IDE" => 1, "MRC" => 49, "DEB" => 10, "AFT" => 1, "WAL" => 10, "CC" => 100);
+    protected $minimumAmounts		= array("AUTO" => 84, "IDE" => 84, "MRC" => 49, "DEB" => 10, "WAL" => 10, "CC" => 100);
 
     protected $checkAPIs			= array("IDE" => "https://www.targetpay.com/ideal/check",
     										"MRC" => "https://www.targetpay.com/mrcash/check",
                                             "DEB" => "https://www.targetpay.com/directebanking/check",
-                                            "AFT" => "https://www.targetpay.com/afterpay/check",
                                             "WAL" => "https://www.targetpay.com/paysafecard/check",
                                             "CC" => "https://www.targetpay.com/creditcard_atos/check"
                                             );
@@ -193,7 +192,6 @@ class TargetPayCoreEE4
         		"description=".urlencode($this->description)."&".
                 "currency=".urlencode($this->currency)."&".
                 (($this->payMethod=="IDE") ? "ver=3&language=nl&" : "").
-                (($this->payMethod=="AFT") ? "ver=2&language=nl&" : "").
                 (($this->payMethod=="MRC") ? "lang=".urlencode($this->getLanguage(array("NL","FR","EN"),"NL"))."&" : "").
                 (($this->payMethod=="DEB") ? "type=1&country=".urlencode($this->countryId)."&lang=".urlencode($this->getLanguage(array("NL","EN","DE"),"DE"))."&" : "").
                 "userip=".urlencode($_SERVER["REMOTE_ADDR"])."&".
@@ -228,9 +226,6 @@ class TargetPayCoreEE4
 	 *	
 	 *	Returns true if payment successfull (or testmode) and false if not
 	 *	
-	 *	After payment:
-	 *	- Read the errors with getErrorMessage()
-	 *	- Get user information using getConsumerInfo()
 	 *	
      */
 
@@ -348,11 +343,6 @@ class TargetPayCoreEE4
 	    	$bankId = strtoupper ($bankId);
 	    	if (substr($bankId,0,3)=="IDE") {
 	        	$this->payMethod = "IDE";
-	            $this->bankId = substr($bankId, 3, 4);
-	            return true;
-	        } else
-	        if (substr($bankId,0,3)=="AFT") {
-	        	$this->payMethod = "AFT";
 	            $this->bankId = substr($bankId, 3, 4);
 	            return true;
 	        } else
